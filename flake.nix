@@ -26,6 +26,7 @@
                 ormolu
                 # Dependencies
                 megaparsec
+                MissingH
                 split
               ]))
           ]

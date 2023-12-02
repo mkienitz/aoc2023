@@ -28,6 +28,7 @@
                 megaparsec
                 MissingH
                 split
+                pretty-simple
               ]))
           ]
           ++ (with pkgs; [

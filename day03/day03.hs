@@ -15,33 +15,30 @@ type Schematic = [[Symbol]]
 
 -- Parse :) --
 parseInput :: String -> Schematic
-parseInput = zipWith (\rIdx row -> zipWith (\c cIdx -> ((rIdx, cIdx), c)) row [0 ..]) [0 ..] . lines
+parseInput = zipWith (\x row -> zipWith (\c y -> ((x, y), c)) row [0 ..]) [0 ..] . lines
 
 -- Logic :) --
 neighbors :: Coords -> [Coords]
-neighbors (rIdx, cIdx) =
-  let offsets = [-1, 0, 1]
-   in [(rIdx + rOff, cIdx + cOff) | rOff <- offsets, cOff <- offsets]
+neighbors (x, y) = [(x + xOff, y + yOff) | xOff <- [-1, 0, 1], yOff <- [-1, 0, 1]]
 
 partSchem :: (Char -> Bool) -> Schematic -> ([Digits], [Coords])
 partSchem predicate =
-  second (map fst . filter (predicate . snd) . concat) -- filter others and get coords
-    . partition (any (isDigit . snd)) -- split numbers and others
-    . concatMap (groupOn (isDigit . snd)) -- group adjacent digits
+  second (map fst . filter (predicate . snd) . concat)
+    . partition (any (isDigit . snd))
+    . concatMap (groupOn (isDigit . snd))
 
 p1 :: Schematic -> Int
-p1 schematic = sum . map (read . map snd) . filter hasSpecialNeighbor $ digits
+p1 schem = sum . map (read . map snd) $ filter touchesSpecials digits
   where
-    (digits, specials) = partSchem (\c -> not (isDigit c || c == '.')) schematic
-    hasSpecialNeighbor :: Digits -> Bool
-    hasSpecialNeighbor = any ((`elem` concatMap neighbors specials) . fst)
+    (digits, specials) = partSchem (\c -> not (isDigit c || c == '.')) schem
+    touchesSpecials = any ((`elem` concatMap neighbors specials) . fst)
 
 p2 :: Schematic -> Int
-p2 schematic = sum . map product . filter ((== 2) . length) . map touchedDigits $ stars
+p2 schem = sum . map product . filter ((== 2) . length) $ map touchedNumbers stars
   where
-    (digits, stars) = partSchem (== '*') schematic
-    touchedDigits :: Coords -> [Int]
-    touchedDigits star = map (read . map snd) . filter (any ((`elem` neighbors star) . fst)) $ digits
+    (digits, stars) = partSchem (== '*') schem
+    touchedNumbers star =
+      map (read . map snd) $ filter (any ((`elem` neighbors star) . fst)) digits
 
 main :: IO ()
 main = readFile "input.txt" >>= print . sequence [p1, p2] . parseInput

@@ -1,29 +1,22 @@
 module Main (main) where
 
-import Data.Bifunctor (Bifunctor (second))
 import Data.Either (fromRight)
-import Data.List (foldl')
-import Data.Map qualified as M
-import Data.Set qualified as S
+import Data.Tuple.Extra (first)
 import Data.Void (Void)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer (decimal)
 
-data Card = Card
-  { winning :: S.Set Int,
-    hand :: [Int]
-  }
-  deriving (Show)
+type Points = Int
 
-type Task = [Card]
+type Task = [Points]
 
 type Parser = Parsec Void String
 
-cardP :: Parser Card
+cardP :: Parser Points
 cardP =
-  (\w h -> Card {winning = S.fromList w, hand = h})
-    <$> ( (string "Card" <* space1 <* decimal <* char ':' <* space1)
+  (\w h -> length $ filter (`elem` h) w)
+    <$> ( (string "Card" <* space <* decimal <* char ':' <* space)
             *> some (decimal <* space)
             <* (space *> char '|' <* space)
         )
@@ -35,20 +28,17 @@ taskP = some (cardP <* optional newline) <* eof
 parseInput :: String -> Task
 parseInput = fromRight [] . runParser taskP "input.txt"
 
-nWinning :: Card -> Int
-nWinning (Card {winning, hand}) = length $ filter (`S.member` winning) hand
-
 p1 :: Task -> Int
-p1 = sum . map ((2 ^) . (+ (-1))) . filter (> 0) . map nWinning
+p1 = sum . map ((2 ^) . (+ (-1))) . filter (> 0)
 
 p2 :: Task -> Int
-p2 task = M.foldl' ((. snd) . (+)) 0 $ foldl' update cardMap (M.keys cardMap)
+p2 = countOccs . map (1,)
   where
-    update map id = foldl' (flip (M.adjust (second (+ occs)))) map copyIndices
-      where
-        (card, occs) = map M.! id
-        copyIndices = take (nWinning card) [id + 1 ..]
-    cardMap = M.fromList $ zip [1 ..] (map (,1) task)
+    countOccs ((occs, pts) : ms) = occs + countOccs (mapFirstN (first (+ occs)) pts ms)
+    countOccs [] = 0
+    mapFirstN f n [] = []
+    mapFirstN f 0 xs = xs
+    mapFirstN f n (x : xs) = f x : mapFirstN f (n - 1) xs
 
 main :: IO ()
 main = readFile "input.txt" >>= print . sequence [p1, p2] . parseInput

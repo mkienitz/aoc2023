@@ -1,5 +1,6 @@
 module Main (main) where
 
+import Control.Arrow ((>>>))
 import Data.Either.Extra (fromRight')
 import Data.List (find, foldl')
 import Data.List.Extra (chunksOf)
@@ -10,25 +11,29 @@ import Text.Megaparsec.Char.Lexer (decimal)
 
 type Range = (Int, Int, Int)
 
-type Map = [Range]
-
-type Parser = Parsec Void String
+type Map = (Int -> Int)
 
 type Seeds = [Int]
 
-type Task = (Seeds, [Map])
+type Task = ([Int], [Map])
+
+type Parser = Parsec Void String
 
 seedP :: Parser Seeds
 seedP = string "seeds: " *> sepBy1 decimal (char ' ') <* newline
 
-mapP :: Parser Map
+mapP :: Parser (Int -> Int)
 mapP =
-  some letterChar
-    <* string "-to-"
-    <* some letterChar
-    <* string " map:"
-    <* newline
-    *> some ((,,) <$> (decimal <* space1) <*> (decimal <* space1) <*> (decimal <* space1))
+  look
+    <$> ( some printChar
+            <* newline
+            *> some
+              ( (,,)
+                  <$> (decimal <* space1)
+                  <*> (decimal <* space1)
+                  <*> (decimal <* space1)
+              )
+        )
 
 taskP :: Parser Task
 taskP = (,) <$> seedP <* newline <*> many mapP <* eof
@@ -36,13 +41,13 @@ taskP = (,) <$> seedP <* newline <*> many mapP <* eof
 parseInput :: String -> Task
 parseInput = fromRight' . runParser taskP "input.txt"
 
-look :: [Range] -> (Int -> Int)
+look :: [Range] -> Map
 look ms = \x -> maybe x (\(dst, src, _) -> dst + (x - src)) (f x)
   where
     f x = find (\(dst, src, n) -> x >= src && x < src + n) ms
 
-solve :: ([Int] -> [Int]) -> Task -> Int
-solve f (seeds, maps) = minimum . map (flip (foldl' (flip look)) maps) $ f seeds
+solve :: (Seeds -> Seeds) -> Task -> Int
+solve f (seeds, maps) = minimum . map (foldl' (>>>) id maps) $ f seeds
 
 p1 :: Task -> Int
 p1 = solve id

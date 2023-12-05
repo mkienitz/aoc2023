@@ -29,7 +29,7 @@ parseInput :: String -> Task
 parseInput = fromRight [] . runParser taskP "input.txt"
 
 p1 :: Task -> Int
-p1 = sum . map ((2 ^) . (+ (-1))) . filter (> 0)
+p1 = sum . map ((2 ^) . subtract 1) . filter (> 0)
 
 p2 :: Task -> Int
 p2 = countOccs . map (1,)

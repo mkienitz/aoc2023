@@ -21,8 +21,8 @@ type Parser = Parsec Void String
 taskP :: Parser Task
 taskP =
   (,)
-    <$> (string "Time:" <* space *> (decimal `sepBy` some (char ' ')) <* newline)
-    <*> (string "Distance:" <* space *> (decimal `sepBy` some (char ' ')) <* newline)
+    <$> (string "Time:" *> hspace *> (decimal `sepBy` hspace) <* newline)
+    <*> (string "Distance:" <* hspace *> (decimal `sepBy` hspace) <* newline)
     <* eof
 
 parseInput :: String -> Task

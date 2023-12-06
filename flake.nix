@@ -29,6 +29,7 @@
                 MissingH
                 split
                 pretty-simple
+                numbers
               ]))
           ]
           ++ (with pkgs; [

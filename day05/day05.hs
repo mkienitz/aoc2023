@@ -20,7 +20,7 @@ type Task = ([Int], [Map])
 type Parser = Parsec Void String
 
 seedP :: Parser Seeds
-seedP = string "seeds: " *> sepBy1 decimal (char ' ') <* newline
+seedP = string "seeds: " *> sepBy decimal hspace <* newline
 
 mapP :: Parser (Int -> Int)
 mapP =
@@ -29,14 +29,17 @@ mapP =
             <* newline
             *> some
               ( (,,)
-                  <$> (decimal <* space1)
-                  <*> (decimal <* space1)
-                  <*> (decimal <* space1)
+                  <$> decimal
+                  <* hspace
+                  <*> decimal
+                  <* hspace
+                  <*> decimal
+                  <* newline
               )
         )
 
 taskP :: Parser Task
-taskP = (,) <$> seedP <* newline <*> many mapP <* eof
+taskP = (,) <$> seedP <* newline <*> (mapP `sepBy` newline) <* eof
 
 parseInput :: String -> Task
 parseInput = fromRight' . runParser taskP "input.txt"
